@@ -8,8 +8,10 @@ import 'package:flutter/foundation.dart'
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'data/model/perma.dart';
+import 'data/repositories/area_repository.dart';
 import 'data/repositories/garden_repository.dart';
 import 'data/services/database_service.dart';
+import 'ui/view_models/widgets/area_screen.dart';
 import 'ui/view_models/widgets/garden_screen.dart';
 import './data/plants.dart' as plants_data;
 
@@ -73,10 +75,8 @@ void main() async {
     MultiProvider(
       providers: [
         Provider(create: (context) => DatabaseService(database: database)),
-        Provider(
-          create: (context) =>
-              GardenRepository(databaseService: context.read()),
-        ),
+        Provider(create: (context) => GardenRepository(databaseService: context.read())),
+        Provider(create: (context) => AreaRepository(databaseService: context.read())),
       ],
       child: const MyApp(),
     ),
@@ -95,6 +95,10 @@ class MyApp extends StatelessWidget {
             path: '/',
             builder: (context, state) =>
                 GardenScreen(title: 'Welcome to your garden'),
+          ),
+          GoRoute(
+            path: '/area',
+            builder: (context, state) => AreaScreen(areaIndex: state.pathParameters['areaIndex'] != null ? int.parse(state.pathParameters['areaIndex']!) : 0, areaId: state.pathParameters['areaId'] != null ? int.parse(state.pathParameters['areaId']!) : 0),
           ),
         ],
       ),

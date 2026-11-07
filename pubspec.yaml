@@ -40,6 +40,7 @@ dependencies:
   provider: ^6.1.5+1
   sqflite_common_ffi: ^2.4.5
   sqflite_common_ffi_web: ^1.2.0
+  font_awesome_flutter: ^11.0.0
 
 dev_dependencies:
   flutter_test:

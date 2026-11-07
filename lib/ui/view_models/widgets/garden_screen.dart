@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/model/perma.dart';
+import '../area_view_model.dart';
 import '../garden_view_model.dart';
+import 'area_screen.dart';
 
 class GardenScreen extends StatefulWidget {
   const GardenScreen({super.key, required this.title});
@@ -37,9 +39,40 @@ class _GardenScreenState extends State<GardenScreen> {
       throw ('Error loading garden: $e');
     }
   }
+  void addArea(BuildContext context) async {
+    try {
+      final viewModel = AreaViewModel(areaRepository: context.read());
+      if(areas!.length < 6){
+        if(areas!.isNotEmpty) {
+          await viewModel.saveArea(Area(gardenId: garden.id!, plants: []));
+        } else {
+          await viewModel.saveArea(Area(id: 1, gardenId: garden.id!, plants: []));
+        }
+      }
+    } catch (e) {
+      // Handle the error, e.g., show a snackbar or log it
+      throw ('Error creating area: $e');
+    }
+  }
+
+  void getAreasByGarden(BuildContext context) async {
+    try {
+      final viewModel = AreaViewModel(areaRepository: context.read());
+      final stockedAreas = await viewModel.getAreasByGardenId(garden.id!);
+      if (mounted) {
+        setState(() {
+          areas = stockedAreas;
+        });
+    }
+    } catch (e) {
+      // Handle the error, e.g., show a snackbar or log it
+      throw ('Error loading areas: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     getGarden(context);
+    getAreasByGarden(context);
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
@@ -83,8 +116,8 @@ class _GardenScreenState extends State<GardenScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // addArea(context);
-                    // getAreasByGarden(context);
+                    addArea(context);
+                    getAreasByGarden(context);
                   },
                   child: Text(
                     'Add an area to the garden',
@@ -111,6 +144,16 @@ class AreaWidget extends StatefulWidget {
 }
 
 class _AreaWidget extends State<AreaWidget> {
+  bool _isDeleted = false;
+  void deleteArea(BuildContext context, Area area) async {
+    final viewModel = AreaViewModel(areaRepository: context.read());
+    await viewModel.deleteArea(area);
+    if (mounted) {
+      setState(() {
+        _isDeleted = true;
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Wrap(
@@ -133,7 +176,13 @@ class _AreaWidget extends State<AreaWidget> {
                   const Color.fromARGB(255, 83, 65, 58),
                 ),
               ),
-              onPressed: () => {},
+              onPressed: () => {
+                Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (context) => AreaScreen(areaIndex: widget.areas.indexOf(area)+1, areaId: area.id!)
+                ))
+              },
               child: Column(
                 children: [
                   Text(
@@ -145,7 +194,7 @@ class _AreaWidget extends State<AreaWidget> {
                   ),
                   TextButton(
                     onPressed: () {
-                      //deleteArea(context, area);
+                      deleteArea(context, area);
                     },
                     child: Text(
                       'Delete area',

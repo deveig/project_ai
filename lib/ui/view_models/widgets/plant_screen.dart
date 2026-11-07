@@ -33,22 +33,6 @@ class _PlantScreenState extends State<PlantScreen> {
       throw Exception('Failed to get plant by id: $e');
     }
   }
-  // void getAreaById(BuildContext context, int id) async {
-  //   try {
-  //     final areaViewModel = AreaViewModel(areaRepository: context.read());
-  //     final area = await areaViewModel.getAreaById(id);
-  //     if (area == null) {
-  //       throw Exception('Area not found');
-  //     }
-  //     if (mounted) {
-  //       setState(() {
-  //         this.area = area;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Failed to get area by id: $e');
-  //   }
-  // }
   void addPlantToArea(BuildContext context) async {
     try{
       final areaViewModel = AreaViewModel(areaRepository: context.read());
@@ -98,9 +82,10 @@ class _PlantScreenState extends State<PlantScreen> {
       body: Container(
           color: const Color.fromARGB(255, 221, 245, 238),
           alignment: Alignment.topCenter,
+          padding: EdgeInsets.all(20.0),
           child: SingleChildScrollView(
           child: plant?.id != null ? Column(
-            spacing: 20.0,
+            spacing: 10.0,
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
@@ -109,50 +94,49 @@ class _PlantScreenState extends State<PlantScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  spacing: 20.0,
+                  spacing: 5.0,
                   children: [
                   ItemWidget(title: 'FAMILY', text: plant!.family),
-                  ItemWidget(title: 'TYPE', text: plant!.type.name),])),
-              Text('FEATURE', style: TextStyle(fontWeight: FontWeight(600)), textAlign: TextAlign.left,),
-              Container(
-                padding: EdgeInsets.all(20.0),
-                margin:  EdgeInsetsGeometry.directional(start: 120.0, end: 120.0, top: 0.0, bottom: 0.0),
-                color: Color.fromARGB(255, 8, 51, 35),
-                //decoration: BoxDecoration(border: BoxBorder.all(color: Color.fromARGB(255, 8, 51, 35), width: 1.0, style: BorderStyle.solid)),
-                alignment: Alignment.center,
-                child: 
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${plant!.name} is a ${plant!.growthType} plant and could measure until ${plant!.size} cm.', style: TextStyle(color: Color.fromARGB(255, 221, 245, 238)), textAlign: TextAlign.left),
-                    Text('${plant!.name} has ${plant!.rootType} root ${plant!.creeping ? ', creeping ': ''}and ${plant!.leafType} leaves.', style: TextStyle(color: Color.fromARGB(255, 221, 245, 238)), textAlign: TextAlign.left),
-                    plant!.isMelliferous ? Text('${plant!.name} is a melliferous plant.', style: TextStyle(color: Color.fromARGB(255, 221, 245, 238)), textAlign: TextAlign.left) : SizedBox()
-                  ])
+                  ItemWidget(title: 'TYPE', text: plant!.type.name),
+                ])
               ),
+              Text('FEATURE', style: TextStyle(fontWeight: FontWeight(600)), textAlign: TextAlign.left,),
+                Container(
+                  decoration: BoxDecoration(border: Border.all(color: Color.fromARGB(255, 8, 51, 35)), borderRadius: BorderRadiusGeometry.circular(25.0)),
+                  padding: EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                    Text('${plant!.name} is a ${plant!.growthType} plant and could measure until ${plant!.size} cm.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left),
+                    Text('${plant!.name} has ${plant!.rootType} root ${plant!.creeping ? ', creeping ': ''}and ${plant!.leafType} leaves.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left),
+                    plant!.isMelliferous ? Text('${plant!.name} is a melliferous plant.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left) : SizedBox()
+                  ])
+                ),
+              // ),
               Container(
                 padding: EdgeInsets.all(20.0),
                 margin: EdgeInsetsGeometry.directional(start: 10.0, end: 10.0, top: 0.0, bottom: 0.0),
-                child: Row(
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 20.0,
+                spacing: 5.0,
                 children: [
-                  ItemWidget(title: 'SOWING PERIOD', text: '📅 ${plant!.sowingPeriod}'),
+                  ItemWidget(title: 'SOWING', text: '📅 ${plant!.sowingPeriod}'),
                   ItemWidget(title: 'WATERING', text: getWateringEmoji(plant!.watering)),
-                  ItemWidget(title: 'SUN EXPOSURE', text: getSunExposureEmoji(plant!.sunExposure)),
+                  ItemWidget(title: 'EXPOSURE', text: getSunExposureEmoji(plant!.sunExposure)),
                 ])),
               Text('DISTINCTIVE FEATURE', style: TextStyle(fontWeight: FontWeight(600)), textAlign: TextAlign.left,),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 20.0,
-                children: [
-                ItemWidget(title: 'ANTI PARASITE', text: plant!.isAntiParasite ? 'YES' : 'NO'),
-                ItemWidget(title: 'NITROGEN INPUT', text: plant!.isNitrogenInput ? 'YES' : 'NO'),
-                ItemWidget(title: 'NUTRIENT RICH', text: plant!.isNutrientRich ? 'YES' : 'NO'),
-                ItemWidget(title: 'PARASITE ATTACK RISK', text: plant!.isParasiteAttackRisk ? 'YES' : 'NO'),
-              ]),
+              Container( 
+                decoration: BoxDecoration(border: Border.all(color: Color.fromARGB(255, 8, 51, 35)), borderRadius: BorderRadiusGeometry.circular(25.0)),
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                      plant!.isAntiParasite ? Text('${plant!.name} is a good anti parasite.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left,) : SizedBox(),
+                      plant!.isNutrientRich ? Text('${plant!.name} is consumes a lot of nutrient.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left): SizedBox(),
+                      plant!.isParasiteAttackRisk ? Text('${plant!.name} can be attack by parasite.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left): SizedBox(),
+                      plant!.isNitrogenInput ? Text('${plant!.name} extends nitrogen in soil.', style: TextStyle(color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left): SizedBox(),
+                  ])),
               Container(
                 margin: EdgeInsets.all(20),
                 alignment: Alignment.bottomCenter,
@@ -168,7 +152,7 @@ class _PlantScreenState extends State<PlantScreen> {
                   child: Text('Add ${plant!.name} ${plant!.icon} to Area ${widget.areaId}', textAlign: TextAlign.center, style: TextStyle(color: const Color.fromARGB(255, 221, 245, 238),)),
                 )
               )
-            ]) : Text('Plant not found')
+             ]) : Text('Plant not found')
     )));
   }
 }
@@ -184,15 +168,18 @@ class ItemWidget extends StatefulWidget{
 class _ItemWidgetState extends State<ItemWidget> {
   @override
   Widget build(BuildContext context){
-    return Column(
-            spacing: 10.0,
+    return Container( 
+          decoration: BoxDecoration(borderRadius: BorderRadiusGeometry.circular(25.0), color: Color.fromARGB(255, 8, 51, 35),),
+          padding: EdgeInsets.all(10.0),
+          child: Column(
             children: [
-              Text(widget.title, style: TextStyle(fontWeight: FontWeight(600), color: Color.fromARGB(255, 8, 51, 35)), textAlign: TextAlign.left),
-              Container(
-                padding: EdgeInsets.all(10.0),
-                decoration: BoxDecoration(color: Color.fromARGB(255, 8, 51, 35), borderRadius: BorderRadiusGeometry.circular(25.0)),
-                child: Text(widget.text, style: TextStyle(color: Color.fromARGB(255, 221, 245, 238)), textAlign: TextAlign.left),
-              ),
-            ]);
+              Text(widget.title, style: TextStyle(fontWeight: FontWeight(600), color: Color.fromARGB(255, 221, 245, 238)), textAlign: TextAlign.left),
+              // Container(
+              //   padding: EdgeInsets.all(10.0),
+              //   decoration: BoxDecoration(color: Color.fromARGB(255, 8, 51, 35), borderRadius: BorderRadiusGeometry.circular(25.0)),
+                // child: 
+              Text(widget.text, style: TextStyle(color: Color.fromARGB(255, 221, 245, 238)), textAlign: TextAlign.left),
+              // ),
+            ]));
   }
 }

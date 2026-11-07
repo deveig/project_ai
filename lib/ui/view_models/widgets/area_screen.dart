@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../data/model/perma.dart';
 import '../../../data/plants.dart' as plants_data;
+import '../plant_view_model.dart';
+import 'plant_screen.dart';
 
 class AreaScreen extends StatefulWidget{
   const AreaScreen({super.key, required this.areaIndex, required this.areaId});
@@ -19,8 +21,56 @@ class _AreaScreenState extends State<AreaScreen> {
   List<Plant?> plants = [];
   List<Plant?> selectedPlants = [];
   Criteria criteriaView = .all;
+  void getAllPlants(BuildContext context) async {
+    try {
+      final viewModel = PlantViewModel(plantRepository: context.read());
+      final plantsGallery = await viewModel.getAllPlants();
+      if (mounted) {
+        setState(() {
+          plants = plantsGallery;
+        });
+      }
+    } catch (e) {
+      // Handle the error, e.g., show a snackbar or log it
+      throw ('Error loading plants: $e');
+    }
+  }
+  void getPlantsByAreaId(BuildContext context) async {
+    try {
+      final viewModel = PlantViewModel(plantRepository: context.read());
+      final plants = await viewModel.getPlantsByAreaId(widget.areaId);
+      if (plants != null) {
+        if (mounted) {
+          setState(() {
+            selectedPlants = plants;
+          });
+        }
+      }
+    } catch (e) {
+      // Handle the error, e.g., show a snackbar or log it
+      throw ('Error loading plants for area: $e');
+    }
+  }
+  void filterPlantsByCriteria(BuildContext context, String criteria) async {
+    try {
+      final viewModel = PlantViewModel(plantRepository: context.read());
+      final galleryPlants = await viewModel.getPlantsByCriteria(criteria);
+      if (galleryPlants != null) {
+        if (mounted) {
+          setState(() {
+            plants = galleryPlants;
+          });
+        }
+      }
+    } catch (e) {
+      // Handle the error, e.g., show a snackbar or log it
+      throw ('Error loading plants for area: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
+    criteriaView == .all ? getAllPlants(context) : filterPlantsByCriteria(context, criteriaView.name);
+    getPlantsByAreaId(context);
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
@@ -97,19 +147,14 @@ class _AreaScreenState extends State<AreaScreen> {
                         // item in the selected set.
                         criteriaView = newSelection.first;
                       });
+                      filterPlantsByCriteria(context, criteriaView.name);
                     },
                   ))
               ]);
             },
-            ),
-              // Expanded(
-              //   child: Container(
-              //     margin: EdgeInsets.all(20.0),
-              //     color: Color.fromARGB(255, 238, 217, 153),
-            PlantGalleryWidget(plants: plants, areaId: widget.areaId)
-              // ),
-                  
-            ]),
+          ),
+            PlantGalleryWidget(plants: plants, areaId: widget.areaId)      
+        ]),
     ));
   }
 }
@@ -144,22 +189,22 @@ class AreaPlantsWidget extends StatefulWidget {
 } 
 
 class _AreaPlantsWidget extends State<AreaPlantsWidget> {
-  // void deletePlantInArea(BuildContext context, Plant plant) async {
-  //   final plantViewModel = PlantViewModel(plantRepository: context.read());
-  //   await plantViewModel.deletePlantInArea(plant, widget.areaId);
-  //   if (mounted) {
-  //     setState(() {
-  //       widget.plants.remove(plant);
-  //     });
-  //   }
-  // }
+  void deletePlantInArea(BuildContext context, Plant plant) async {
+    final plantViewModel = PlantViewModel(plantRepository: context.read());
+    await plantViewModel.deletePlantInArea(plant, widget.areaId);
+    if (mounted) {
+      setState(() {
+        widget.plants.remove(plant);
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Wrap (
       spacing: 20.0,
       runSpacing: 20.0,
       children: widget.plants.map((plant) => ElevatedButton(style: ButtonStyle(alignment: Alignment.center, shape: WidgetStatePropertyAll(LinearBorder.top()), elevation: WidgetStatePropertyAll(10.0), padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(EdgeInsetsGeometry.all(20.0)), backgroundColor: WidgetStatePropertyAll<Color>(const Color.fromRGBO(139, 238, 134, 1)), shadowColor: WidgetStatePropertyAll<Color>(const Color.fromARGB(255, 83, 65, 58))), onPressed: () => {
-        //deletePlantInArea(context, plant)
+        deletePlantInArea(context, plant)
       }, 
       child: PlantWidget(plant: plant!))).toList(),
 
@@ -199,7 +244,13 @@ class _PlantGalleryWidget extends State<PlantGalleryWidget> {
               backgroundColor: WidgetStatePropertyAll<Color>(const Color.fromARGB(255, 115, 209, 121)), 
               shadowColor: WidgetStatePropertyAll<Color>(const Color.fromARGB(255, 83, 65, 58))
             ),
-            onPressed: () => {},
+            onPressed: () => {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (context) => PlantScreen(plantId: plant.id!, areaId: widget.areaId)
+                ))
+            },
             child: PlantWidget(plant: plant!));
           },
           childCount: widget.plants.length,

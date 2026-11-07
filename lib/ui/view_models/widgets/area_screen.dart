@@ -1,11 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:go_router/go_router.dart';
+import 'package:genui/genui.dart' as dartantic;
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:genui/genui.dart';
+import 'package:json_schema_builder/json_schema_builder.dart';
+import '../../../agent/agent.dart';
 import '../../../data/model/perma.dart';
-import '../../../data/plants.dart' as plants_data;
 import '../plant_view_model.dart';
 import 'plant_screen.dart';
 
@@ -21,6 +22,14 @@ class _AreaScreenState extends State<AreaScreen> {
   List<Plant?> plants = [];
   List<Plant?> selectedPlants = [];
   Criteria criteriaView = .all;
+  late final SurfaceController _surfaceController;
+  late final A2uiTransportAdapter _transportAdapter;
+  late final Conversation _conversation;
+  final _messageController = TextEditingController(
+    text: 'number',
+  );
+  bool _isStreaming = false;
+  bool _isRequested = false;
   void getAllPlants(BuildContext context) async {
     try {
       final viewModel = PlantViewModel(plantRepository: context.read());
@@ -68,6 +77,108 @@ class _AreaScreenState extends State<AreaScreen> {
     }
   }
   @override
+  void initState() {
+    super.initState();
+    // In initState:
+    final catalog = BasicCatalogItems.asCatalog().copyWith(
+      newItems: [plantAdviceCard],
+    );
+    _surfaceController = SurfaceController(catalogs: [catalog]);
+
+
+    // Create a SurfaceController with a widget catalog.
+    // The BasicCatalogItems contain basic widgets for text, markdown, and images.
+    //_surfaceController = SurfaceController(catalogs: [BasicCatalogItems.asCatalog()]);
+    // _surfaceController = SurfaceController(
+    //   catalogs: [BasicCatalogItems.asCatalog().copyWith(newItems: [riddleCard])],
+    // );
+    // final catalog = BasicCatalogItems.asCatalog();
+    final promptBuilder = PromptBuilder.chat(
+      catalog: catalog,
+      systemPromptFragments: [
+        '''
+        You are an expert in permaculture concept. Every time I give you a list of plants,
+        you should generate UI that displays advices following permaculture concept and crop rotation culture concept by recommand adding other plant in order to enhance the given list of plants.
+        Each advice should have a plant name given by find_plants tool, a plant icon given by find_plants tool and an advice about how the plant can help actual list of plants by permaculture concept. Don't include title and description in component.
+        '''
+      ],
+    );
+  
+  // The Conversation wires transport -> controller internally.
+    _transportAdapter = A2uiTransportAdapter(onSend: (message) async {
+      // Implement sending to LLM and pipe chunks back.
+      final prompt = promptBuilder.systemPromptJoined();
+      final agent = DartanticAgent(); 
+      try {
+        final stream = agent.agent.sendStream(message.text, history: [dartantic.ChatMessage.user(prompt)]);
+        await for (final result in stream) {
+          if (result.output.isNotEmpty) {
+            _transportAdapter.addChunk(result.output);
+          }
+        }
+
+        } catch (err) {
+          print('Failed to generate: $err');
+        } finally {
+          if (mounted) setState(() => _isStreaming = false);
+        }
+    });
+        // ... initialize your LLM Client of choice using promptBuilder.systemPromptJoined()
+    // Create the Conversation to orchestrate everything.
+    _conversation = Conversation(
+      controller: _surfaceController,
+      transport: _transportAdapter,
+    );
+
+    // Listen for surface lifecycle events:
+    _conversation.events.listen((event) {
+      if (event is ConversationSurfaceAdded) {
+        _onSurfaceAdded(event);
+      } else if (event is ConversationSurfaceRemoved) {
+        _onSurfaceDeleted(event);
+      }
+    });
+  }
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _conversation.dispose();
+    _transportAdapter.dispose();
+    super.dispose();
+  }
+
+    Future<void> _generatePlantAdviceList() async {
+      final message = _messageController.text.trim();
+      if (message.isEmpty || _isStreaming) return;
+      if (mounted){
+        setState(() { 
+          //_riddles = null;
+          _isStreaming = true;
+        });
+      }
+      await _conversation.sendRequest(ChatMessage.user(message));
+
+  }
+  
+  //final _textController = TextEditingController();
+  final _surfaceIds = <String>[];
+
+  // Invoked by the events stream listener when a new
+  // UI surface is generated. Here, the ID is stored so the
+  // build method can create a Surface to display it.
+  void _onSurfaceAdded(ConversationSurfaceAdded update) {
+    setState(() {
+      _surfaceIds.add(update.surfaceId);
+    });
+  }
+
+  // Invoked by the events stream listener when a UI surface is removed.
+  void _onSurfaceDeleted(ConversationSurfaceRemoved update) {
+    setState(() {
+      _surfaceIds.remove(update.surfaceId);
+    });
+  }
+  @override
   Widget build(BuildContext context) {
     criteriaView == .all ? getAllPlants(context) : filterPlantsByCriteria(context, criteriaView.name);
     getPlantsByAreaId(context);
@@ -93,6 +204,36 @@ class _AreaScreenState extends State<AreaScreen> {
             (BuildContext context, int index) {
               return Column(children: [
                   Container(height: 450, padding: EdgeInsets.all(20.0), margin: EdgeInsets.all(20), alignment: Alignment.center, color: Colors.brown, child: AreaPlantsWidget(plants: selectedPlants, areaId: widget.areaId)),
+                  TextButton(
+                    onPressed: () {
+                      _generatePlantAdviceList();
+                      if (mounted) {
+                        setState(() {
+                          _isRequested = true;
+                        });
+                      }
+                    },
+                    child: Row(children: [Icon(
+                      Icons.assistant,
+                      color: Color.fromARGB(255, 8, 51, 35),
+                      size: 24.0,
+                      semanticLabel: 'Ask generative AI for permaculture advice',
+                    ),
+                    Text('permaculture advice', style: TextStyle(fontWeight: FontWeight(900), color: const Color.fromARGB(255, 8, 51, 35)))])
+                    ),
+                    _isRequested ? 
+                    Container(
+                      padding: EdgeInsets.all(20.0),
+                      height: 400.0,
+                      child: ListView.builder(
+                        itemCount: _surfaceIds.length,
+                        itemBuilder: (context, index) {
+                          // For each surface, create a Surface to display it.
+                          final id = _surfaceIds[index];
+                          return Surface(surfaceContext: _surfaceController.contextFor(id));
+                          },
+                        ),
+                  ) : Container(),
                   Text('SELECT PLANTS', style: TextStyle(fontWeight: FontWeight(600), color: Color.fromARGB(255, 10, 46, 36)), textAlign: TextAlign.center,),
                   Container(
                     padding: EdgeInsets.all(20.0),
@@ -159,6 +300,46 @@ class _AreaScreenState extends State<AreaScreen> {
   }
 }
 enum Criteria {all, aromatic, vegetable, fruit, flower}
+
+final _schema = S.object(
+  properties: {
+    'plantName': S.string(description: 'The name of the plant'),
+    'plantIcon': S.string(description: 'The icon of the plant.'),
+    'advice': S.string(description: 'The advice about assistance provided by the plant.'),
+  },
+  required: ['plantName', 'plantIcon', 'advice'],
+);
+
+final plantAdviceCard = CatalogItem(
+  name: 'PlantAdviceCard',
+  dataSchema: _schema,
+  widgetBuilder:
+      (itemContext) {
+        final json = itemContext.data as Map<String, Object?>;
+        final plantName = json['plantName'] as String;
+        final plantIcon = json['plantIcon'] as String;
+        final advice = json['advice'] as String;
+
+        final context = itemContext.buildContext;
+
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          //decoration: BoxDecoration(border: Border.all()),
+          color: const Color.fromARGB(255, 229, 218, 179),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(plantName),
+              const SizedBox(height: 8.0),
+              Text(plantIcon),
+              const SizedBox(height: 8.0),
+              Text(advice),
+            ],
+          ),
+        );
+      },
+);
 
 class PlantWidget extends StatefulWidget {
   const PlantWidget({super.key, required this.plant});

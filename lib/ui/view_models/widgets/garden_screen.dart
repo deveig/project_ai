@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
 import '../../../data/model/perma.dart';
+import '../garden_view_model.dart';
 
 class GardenScreen extends StatefulWidget {
   const GardenScreen({super.key, required this.title});
@@ -22,9 +23,23 @@ class GardenScreen extends StatefulWidget {
 class _GardenScreenState extends State<GardenScreen> {
   Garden garden = Garden(id: 1);
   List<Area>? areas = [];
-
+  void getGarden(BuildContext context) async {
+    try {
+      final gardenViewModel = GardenViewModel(gardenRepository: context.read());
+      final stockedGarden = await gardenViewModel.load();
+      if(mounted) {
+        setState(() {
+          garden = stockedGarden!;
+        });
+      }
+    } catch (e) {
+      // Handle the error, e.g., show a snackbar or log it
+      throw ('Error loading garden: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
+    getGarden(context);
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to

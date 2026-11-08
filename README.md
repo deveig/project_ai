@@ -1,6 +1,6 @@
-# flutter_application_1
+# flutter_application_AI
 
-A new Flutter project.
+A new Flutter project with AI agent search.
 
 ## Getting Started
 

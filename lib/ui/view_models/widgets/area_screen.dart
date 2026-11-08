@@ -30,6 +30,7 @@ class _AreaScreenState extends State<AreaScreen> {
   );
   bool _isStreaming = false;
   bool _isRequested = false;
+  bool _isMessageNoPlant = false;
   void getAllPlants(BuildContext context) async {
     try {
       final viewModel = PlantViewModel(plantRepository: context.read());
@@ -206,21 +207,34 @@ class _AreaScreenState extends State<AreaScreen> {
                   Container(height: 450, padding: EdgeInsets.all(20.0), margin: EdgeInsets.all(20), alignment: Alignment.center, color: Colors.brown, child: AreaPlantsWidget(plants: selectedPlants, areaId: widget.areaId)),
                   TextButton(
                     onPressed: () {
-                      _generatePlantAdviceList();
-                      if (mounted) {
-                        setState(() {
-                          _isRequested = true;
-                        });
+                      if(selectedPlants.length > 0){
+                        _generatePlantAdviceList();
+                        if (mounted) {
+                          setState(() {
+                            _isRequested = true;
+                          });
+                        }
+                      } else {
+                        if (mounted) {
+                          setState(() {
+                            _isMessageNoPlant = true;
+                          });
+                        }
                       }
                     },
-                    child: Row(children: [Icon(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 10.0,
+                      children: [ 
+                      Row(children: [Icon(
                       Icons.assistant,
                       color: Color.fromARGB(255, 8, 51, 35),
                       size: 24.0,
                       semanticLabel: 'Ask generative AI for permaculture advice',
                     ),
-                    Text('permaculture advice', style: TextStyle(fontWeight: FontWeight(900), color: const Color.fromARGB(255, 8, 51, 35)))])
-                    ),
+                    Text('permaculture advice', style: TextStyle(fontWeight: FontWeight(900), color: const Color.fromARGB(255, 8, 51, 35)))]),
+                    _isMessageNoPlant ? Text('Add a plant to the area', style: TextStyle(color: Colors.red, fontWeight: FontWeight(700))) : SizedBox()
+                    ])),
                     _isRequested ? 
                     Container(
                       padding: EdgeInsets.all(20.0),
